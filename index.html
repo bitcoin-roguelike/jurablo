@@ -168,20 +168,18 @@ function decodeSDP(str) {
   return JSON.parse(json);
 }
 
-// ====================== RELIABLE WORLD SEED (fixed) ======================
+// ====================== RELIABLE WORLD SEED (HP fix) ======================
 function generateWorldSeed() {
   const state = {
     x: myPos.x,
     y: myPos.y,
-    mh: myHealth,
-    oh: otherHealth,
+    mh: myHealth,        // only YOUR health
     inv: inventory.map(i => i.name).join('|')
   };
   let jsonStr = JSON.stringify(state);
   let b64 = btoa(jsonStr);
   let clean = b64.replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
   
-  // Checksum
   let sum = clean.split('').reduce((a,c) => a + c.charCodeAt(0), 0) % 36;
   let chk = sum.toString(36).toUpperCase();
   
@@ -204,28 +202,26 @@ function loadSeed() {
     return;
   }
   try {
-    let payload = input.slice(2, -1);           // remove K9 and checksum
+    let payload = input.slice(2, -1);
     let givenChk = input.slice(-1);
     
-    // Verify checksum
     let calc = payload.split('').reduce((a,c) => a + c.charCodeAt(0), 0) % 36;
     if (calc.toString(36).toUpperCase() !== givenChk) {
       battleLog('BAD SEED CHECKSUM');
       return;
     }
     
-    // Decode
     let b64 = payload.replace(/-/g,'+').replace(/_/g,'/');
     while (b64.length % 4) b64 += '=';
     const state = JSON.parse(atob(b64));
     
     myPos = {x: state.x || 8, y: state.y || 8};
-    myHealth = Math.max(0, state.mh || 10);
-    otherHealth = Math.max(0, state.oh || 10);
+    if (typeof state.mh === 'number') myHealth = Math.max(0, state.mh); // only restore YOUR HP
+    
     inventory = (state.inv || '').split('|').filter(Boolean).map(name => ({type:'badge', name}));
     
     sendMyState();
-    battleLog('WORLD RESTORED SUCCESSFULLY');
+    battleLog('WORLD RESTORED SUCCESSFULLY ✓ (your HP preserved)');
     draw();
   } catch(e) {
     console.error(e);
@@ -233,7 +229,7 @@ function loadSeed() {
   }
 }
 
-// ====================== NEW: sendMyState ======================
+// ====================== sendMyState ======================
 function sendMyState() {
   if (dc && dc.readyState === 'open') {
     sendMsg({
@@ -245,7 +241,7 @@ function sendMyState() {
   }
 }
 
-// ====================== WEBRTC ======================
+// ====================== WEBRTC (unchanged) ======================
 function setupWebRTC() {
   pc = new RTCPeerConnection({
     iceServers: [{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}]
