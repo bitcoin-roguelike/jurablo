@@ -1,473 +1,493 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>KAIN9 • 16×16</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<style>
-  body, html { margin:0; padding:0; background:#000; color:#0f0; font-family:monospace; text-align:center; overflow:hidden; height:100vh; touch-action:none; user-select:none; -webkit-user-select:none; }
-  canvas { image-rendering:pixelated; border:8px solid #0f0; background:#001100; margin:10px auto; display:block; max-width:95vw; max-height:60vh; }
-  button { font-size:28px; padding:12px 24px; margin:4px; background:#111; color:#0f0; border:4px solid #0f0; }
-  #status, #seedDisplay { font-size:19px; margin:6px; min-height:28px; }
-  textarea { width:92%; height:85px; background:#001100; color:#0f0; font-family:monospace; font-size:15px; margin:6px auto; display:block; line-height:1.3; white-space:pre; overflow-x:auto; }
-  .copybtn { font-size:18px; padding:6px 14px; margin:4px; }
-  input { font-size:24px; padding:10px; background:#001100; color:#0f0; border:4px solid #0f0; width:70%; text-align:center; }
-  .step { background:#001100; border:4px solid #0f0; padding:8px; margin:6px auto; max-width:520px; text-align:left; font-size:17px; }
-  .orange-box { border-color:#ff8c00 !important; }
-  .orange-box h3 { color:#ff8c00; }
-  .green-box { border-color:#0f0 !important; }
-  .green-box h3 { color:#0f0; }
-  #battleLog { 
-    font-size:16px; line-height:1.35; max-height:162px; overflow-y:auto; 
-    background:#001100; border:3px solid #0f0; padding:8px; margin:8px auto; 
-    width:92%; text-align:left; color:#0f0; 
-  }
-  #inventoryDisplay { font-size:18px; color:#ff0; margin:6px; }
+  <meta charset="UTF-8">
+  <title>Jurablo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <link rel="icon" href="bitcoin.ico">
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
 
-  #game { padding:8px; box-sizing:border-box; }
-  .controls {
-    display:flex; flex-wrap:wrap; justify-content:center; gap:12px; margin:15px auto; max-width:420px;
-  }
-  .controls button {
-    font-size:34px; padding:16px 26px; min-width:68px; min-height:68px; touch-action:manipulation;
-  }
-  .slash-btn { min-width:150px !important; background:#330 !important; border-color:#f80 !important; color:#ff0; font-weight:bold; }
+  <style>
+    :root {
+      --accent: #ff8c00;
+      --dark: #111;
+      --darker: #000;
+    }
+    body {
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 10px;
+      background: var(--darker);
+      font-family: 'VT323', monospace;
+      overflow: hidden;
+      touch-action: pan-x pan-y;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+    #console {
+      background:
+        repeating-linear-gradient(0deg, transparent 0px, transparent 1px, rgba(255,255,255,0.012) 1px, rgba(255,255,255,0.012) 2px),
+        url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'%3E%3Crect width='100%25' height='100%25' fill='%23111111'/%3E%3Ccircle cx='8' cy='8' r='0.6' fill='%23ffffff05'/%3E%3Ccircle cx='24' cy='40' r='0.4' fill='%23ffffff03'/%3E%3Ccircle cx='56' cy='16' r='0.5' fill='%23ffffff04'/%3E%3Ccircle cx='32' cy='56' r='0.7' fill='%23ffffff06'/%3E%3C/svg%3E") repeat,
+        var(--dark);
+      background-size: 100% 2px, 64px 64px, auto;
+      border: 4px solid var(--accent);
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      max-width: 800px;
+      width: 100%;
+      box-sizing: border-box;
+      position: relative;
+    }
+    #game-container {
+      position: relative;
+      width: 640px;
+      height: 640px;
+      max-width: 100%;
+    }
+    canvas {
+      width: 640px;
+      height: 640px;
+      border: 2px solid #000;
+      image-rendering: pixelated;
+      max-width: 100%;
+      height: auto;
+      aspect-ratio: 1 / 1;
+    }
+    #splash-screen {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 30;
+      background: url('splash.png') center / cover no-repeat #000;
+      image-rendering: pixelated;
+    }
+    #multiplayer-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 35;
+      background: rgba(17,17,17,0.92);
+      border: 4px solid var(--accent);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      color: var(--accent);
+      padding: 20px;
+      box-sizing: border-box;
+      text-shadow: 2px 2px 0 #000;
+    }
+    #multiplayer-status {
+      font-size: 48px;
+      min-height: 80px;
+      text-align: center;
+    }
+    #multiplayer-overlay button {
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border: none;
+      font-family: 'VT323', monospace;
+      font-size: 42px;
+      font-weight: bold;
+      width: 320px;
+      height: 70px;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 50%, transparent);
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.6);
+    }
+    #multiplayer-overlay button:hover {
+      filter: brightness(1.15);
+    }
+    #multiplayer-overlay button.back {
+      background: #444;
+      color: #ccc;
+      width: 280px;
+      height: 60px;
+      font-size: 32px;
+      margin-top: 20px;
+    }
+    #start-button {
+      position: absolute;
+      top: 75%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 120px;
+      height: 50px;
+      background: var(--accent);
+      color: var(--accent-contrast);
+      border: none;
+      font-family: 'VT323', monospace;
+      font-size: 42px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 5px;
+      z-index: 40;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+      padding: 0;
+      box-shadow: 0 0 6px color-mix(in srgb, var(--accent) 40%, transparent);
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    #start-button:hover {
+      filter: brightness(1.12);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--accent) 70%, white);
+    }
 
-  @media (max-height:720px) {
-    canvas { max-height:47vh !important; }
-    #battleLog { max-height:115px; font-size:15px; }
-    .controls button { font-size:29px; padding:13px 22px; min-width:60px; min-height:60px; }
-  }
-  @media (max-width:480px) {
-    .controls { gap:8px; }
-    #status, #myInfo, #otherInfo { font-size:19px; }
-  }
-</style>
+    /* Controller */
+    #controller { display: flex; justify-content: left; align-items: left; gap: 320px; padding: 5px; }
+    #dpad { display: grid; grid-template-areas: ". t ." "l c r" ". b ."; gap: 5px; }
+    #up { grid-area: t; z-index: 40; border-radius: 5%; }
+    #left { grid-area: l; z-index: 40; border-radius: 5%; }
+    #right { grid-area: r; z-index: 40; border-radius: 5%; }
+    #down { grid-area: b; z-index: 40; border-radius: 5%; }
+    #actions { display: flex; gap: 5px; align-items: center; }
+    button { background-color: transparent; border: 1px solid var(--accent); color: var(--accent); padding: 8px; cursor: pointer; font-size: 14px; width: 40px; height: 40px; box-sizing: border-box; }
+    button:hover { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+    #dpad button { border: none; }
+    #inventory-btn { padding: 0px; border-radius: 25%; height: 20px; width: 30px; background: #fff; color: #000; margin-right: 50px; z-index: 10; font-size: 16px; font-weight: bold; }
+    #attack, #potion { margin-right: 20px; background: var(--accent); color: var(--accent-contrast); height: 50px; width: 50px; border-radius: 50%; }
+    #attack:hover, #potion:hover { filter: brightness(1.12); }
+    #dpad button:active, #dpad button.pressed { background: color-mix(in srgb, var(--accent) 50%, transparent); }
+
+    @media only screen and (min-width: 320px) and (max-width: 767px) {
+      body { overflow: hidden; touch-action: pan-x pan-y; -webkit-user-select: none; user-select: none; }
+      #console { padding: 5px; overflow: hidden; }
+      canvas, #splash-screen, #game-container, #multiplayer-overlay {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        aspect-ratio: 1/1;
+      }
+      #controller { padding: 5px; justify-content: flex-start; gap: 40px; }
+      #dpad { gap: 0px; margin-left: -10px; }
+      #up { margin-top: 160px; margin-left: 0; z-index: 30; border-radius: 10%; }
+      #left, #right, #down { margin-top: 0; border-radius: 10%; }
+      button { width: 55px; height: 55px; font-size: 12px; border-radius: 50%; }
+      #inventory-btn { height: 20px; width: 20px; margin-right: 0; margin-left: -15px; margin-top: 60px; }
+      #attack { height: 45px; width: 45px; margin-top: 165px; margin-right: 0; }
+      #potion { height: 35px; width: 35px; margin-left: 20px; margin-top: 80px; }
+      #actions { gap: 10px; }
+      #multiplayer-overlay button { font-size: 32px; width: 280px; height: 60px; }
+      #multiplayer-status { font-size: 32px; }
+    }
+
+    @media only screen and (min-width: 768px) and (max-width: 1024px) and (-webkit-min-device-pixel-ratio: 2) {
+      body { overflow: hidden; touch-action: pan-x pan-y; -webkit-user-select: none; user-select: none; }
+      #console { padding: 5px; max-width: 640px; }
+      canvas, #splash-screen, #game-container, #multiplayer-overlay {
+        width: 100%;
+        max-width: 640px;
+        height: auto;
+        aspect-ratio: 1/1;
+      }
+      #controller { gap: 120px; padding: 5px 20px; }
+      #dpad { gap: 0px; margin-left: 20px; }
+      #up { margin-top: 160px; }
+      button { width: 65px; height: 65px; font-size: 1.2rem; border-radius: 50%; }
+      #inventory-btn { height: 24px; width: 24px; margin-top: 45px; margin-left: -15px; margin-right: 80px; }
+      #attack { height: 65px; width: 65px; margin-top: 165px; }
+      #potion { height: 45px; width: 45px; margin-top: 80px; }
+    }
+
+    #code-canvas { position: absolute; left: -9999px; top: -9999px; }
+  </style>
 </head>
 <body>
-<h1>KAIN9 — 16×16</h1>
 
-<div id="nameScreen">
-  <h2>ENTER YOUR NAME</h2>
-  <input id="playerName" type="text" value="Kain" maxlength="12"><br><br>
-  <button onclick="setNameAndContinue()">CONTINUE TO ROLE</button>
-</div>
-
-<div id="start" style="display:none">
-  <button onclick="startRole('host')">I AM HOST (Orange H)</button><br><br>
-  <button onclick="startRole('joiner')">I AM JOINER (Green J)</button>
-</div>
-
-<div id="signaling" style="display:none; max-width:560px; margin:0 auto; padding:6px;">
-  <div id="status">Kain9 • Generating SDP...</div>
-
-  <div id="codeSection" class="step orange-box" style="display:none">
-    <h3 id="codeTitle">YOUR CODE</h3>
-    <textarea id="localSDP" readonly></textarea>
-    <button class="copybtn" onclick="copySDP()">📋 COPY @-BLOB</button>
+<div id="console">
+  <div id="game-container">
+    <canvas id="game" width="320" height="320"></canvas>
+    <div id="splash-screen">
+      <button id="start-button">START</button>
+    </div>
+    <div id="multiplayer-overlay">
+      <div id="multiplayer-status">Jurablo</div>
+      <button id="btn-host" onclick="startHost()">HOST GAME</button>
+      <button id="btn-join" onclick="startJoin()">JOIN GAME</button>
+      <button class="back" onclick="cancelMultiplayer()">SINGLEPLAYER</button>
+      <button id="btn-generate" onclick="generateInvite()" style="display:none;">GENERATE INVITE</button>
+      <button id="btn-import" onclick="importAnswer()" style="display:none;">IMPORT ANSWER</button>
+      <img id="code-preview" src="" alt="Invite Image">
+      <button id="btn-back-from-code" class="back" onclick="backFromCode()" style="display:none;">BACK</button>
+    </div>
   </div>
 
-  <div id="pasteSection" class="step" style="display:none">
-    <h3 id="pasteTitle">PASTE FRIEND'S CODE</h3>
-    <button onclick="connect()">CONNECT</button><br>
-    <textarea id="remoteSDP" placeholder="Paste the @-separated blob here..." spellcheck="false" autocorrect="off" autocapitalize="none"></textarea>
+  <div id="controller">
+    <div id="dpad">
+      <button id="up" onclick="move('up')">↑</button>
+      <button id="left" onclick="move('left')">←</button>
+      <button id="right" onclick="move('right')">→</button>
+      <button id="down" onclick="move('down')">↓</button>
+    </div>
+    <div id="actions">
+      <button id="inventory-btn" onclick="togglePlayer()">i</button>
+      <button id="attack" onclick="actionB()">B</button>
+      <button id="potion" onclick="actionA()">A</button>
+    </div>
   </div>
 </div>
 
-<div id="game" style="display:none">
-  <div id="seedDisplay">WORLD SAVE SEED: <span id="seedValue" style="color:#ff0"></span></div>
-  <div id="status">CONNECTED • SLASH YOUR FRIEND</div>
-  
-  <div style="margin:10px; font-size:22px; color:#0f0">
-    <span id="myInfo">YOU: Kain (HP 10/10)</span>  |  
-    <span id="otherInfo">FRIEND: ??? (HP 10/10)</span>
-  </div>
-
-  <div id="inventoryDisplay">BADGES: none</div>
-  
-  <canvas id="c" width="480" height="480"></canvas><br>
-  
-  <div class="controls">
-    <button onclick="move(0,-1)">↑</button>
-    <button onclick="move(-1,0)">←</button>
-    <button onclick="slash()" class="slash-btn">SLASH</button>
-    <button onclick="move(1,0)">→</button>
-    <button onclick="move(0,1)">↓</button>
-  </div>
-
-  <button onclick="copySeed()">COPY WORLD SEED</button>
-  <button onclick="showLoadSeed()">LOAD WORLD SEED</button>
-
-  <div id="battleLog"></div>
-</div>
-
-<div id="loadSeedOverlay" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:100; padding-top:20vh;">
-  <div style="max-width:520px; margin:0 auto; background:#001100; border:6px solid #0f0; padding:20px;">
-    <h3>PASTE WORLD SAVE SEED</h3>
-    <textarea id="loadSeedInput" style="height:120px; width:100%;" spellcheck="false" autocorrect="off" autocapitalize="none" placeholder="K9eyJ4Ijo4LCJ5Ijo4..."></textarea><br><br>
-    <button onclick="loadSeed()">LOAD & RESTORE FULL DUEL</button>
-    <button onclick="hideLoadSeed()" style="background:#330;">CANCEL</button>
-  </div>
-</div>
+<canvas id="code-canvas" width="320" height="320"></canvas>
 
 <script>
-// ====================== KAIN9 CORE ======================
-const SIZE = 16;
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
+// Palette & accent
+const c64Palette = [
+  { hex: '#883932', name: 'Red', contrast: '#67b3e2' },
+  { hex: '#67b3e2', name: 'Cyan', contrast: '#883932' },
+  { hex: '#8b3f96', name: 'Purple', contrast: '#bfce72' },
+  { hex: '#55a049', name: 'Green', contrast: '#8b3f96' },
+  { hex: '#4a4aff', name: 'Blue', contrast: '#bfce72' },
+  { hex: '#bfce72', name: 'Yellow', contrast: '#4a4aff' },
+  { hex: '#b8692a', name: 'Orange', contrast: '#ffffff' },
+  { hex: '#8b5429', name: 'Brown', contrast: '#67b3e2' },
+  { hex: '#c97e7e', name: 'Lt Red', contrast: '#4a4aff' },
+  { hex: '#70ca6f', name: 'Lt Green', contrast: '#8b3f96' },
+  { hex: '#b2e2f4', name: 'Lt Blue', contrast: '#883932' },
+  { hex: '#9b9b9b', name: 'Md Grey', contrast: '#000000' },
+  { hex: '#c5c5c5', name: 'Lt Grey', contrast: '#000000' }
+];
+const randomEntry = c64Palette[Math.floor(Math.random() * c64Palette.length)];
+document.documentElement.style.setProperty('--accent', randomEntry.hex);
+document.documentElement.style.setProperty('--accent-contrast', randomEntry.contrast);
 
+// Game + P2P state
+let gameStarted = false;
+let pc = null;
+let dc = null;
 let myRole = null;
-let myName = '';
-let otherName = '???';
-let myPos = {x:8, y:8};
-let otherPos = null;
-let myHealth = 10;
-let otherHealth = 10;
-let inventory = [];
-let tick = 0;
-let pc, dc;
-let myLetter, myColor, otherLetter, otherColor;
 
-let lastFrame = 0;
-const TARGET_FPS = 30;
-const FRAME_TIME = 1000 / TARGET_FPS;
-
-let battleMessages = [];
-
-// ====================== LOCKDOWN ======================
-function lockdown() {
-  document.addEventListener('gesturestart', e => e.preventDefault(), {passive:false});
-  document.addEventListener('touchmove', e => {if(e.touches.length>1)e.preventDefault();}, {passive:false});
-  document.body.style.overflow = 'hidden';
-  if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
-  if (screen.orientation?.lock) screen.orientation.lock('portrait').catch(()=>{});
+function move(dir) {
+  if (!gameStarted) return;
+  console.log(`Move: ${dir}`);
+  if (dc?.readyState === 'open') dc.send(JSON.stringify({type:'move', dir}));
 }
 
-// ====================== BATTLE LOG ======================
-function battleLog(msg) {
-  battleMessages.unshift(msg);
-  if (battleMessages.length > 10) battleMessages.pop();
-  const logEl = document.getElementById('battleLog');
-  logEl.innerHTML = battleMessages.join('<br>');
-  logEl.scrollTop = 0;
+function togglePlayer() { console.log("Toggle player"); }
+function actionB() { console.log("B pressed"); }
+function actionA() { console.log("A pressed"); }
+
+// Start game
+document.getElementById('start-button').onclick = () => {
+  gameStarted = true;
+  document.getElementById('splash-screen').style.display = 'none';
+  document.getElementById('multiplayer-overlay').style.display = 'flex';
+  document.getElementById('multiplayer-status').textContent = 'Jurablo';
+};
+
+// Role selection
+function startHost() {
+  myRole = 'host';
+  hideRoleChoices();
+  setupWebRTC(true);
 }
 
-// ====================== @-PROTECTED STUN SDP ======================
-function encodeSDP(desc) {
-  const json = JSON.stringify({type: desc.type, sdp: desc.sdp});
-  const b64 = btoa(json);
-  const spaced = b64.match(/.{1,40}/g).join(' ').trim();
-  return spaced.split('').join('@');
+function startJoin() {
+  myRole = 'joiner';
+  hideRoleChoices();
+  setupWebRTC(false);
+  document.getElementById('btn-import').style.display = 'block';
 }
 
-function decodeSDP(str) {
-  let clean = str.trim().replace(/@/g, '').replace(/\s+/g, '');
-  const json = atob(clean);
-  return JSON.parse(json);
+function hideRoleChoices() {
+  document.getElementById('btn-host').style.display = 'none';
+  document.getElementById('btn-join').style.display = 'none';
 }
 
-// ====================== WORLD SEED — FULL DUEL SNAPSHOT ======================
-function generateWorldSeed() {
-  const isHost = myRole === 'host';
-  const state = {
-    hx: isHost ? myPos.x : (otherPos ? otherPos.x : 8),
-    hy: isHost ? myPos.y : (otherPos ? otherPos.y : 8),
-    jx: isHost ? (otherPos ? otherPos.x : 8) : myPos.x,
-    jy: isHost ? (otherPos ? otherPos.y : 8) : myPos.y,
-    hh: isHost ? myHealth : otherHealth,
-    jh: isHost ? otherHealth : myHealth,
-    inv: inventory.map(i => i.name).join('|')
+function cancelMultiplayer() {
+  document.getElementById('multiplayer-overlay').style.display = 'none';
+}
+
+// WebRTC
+function setupWebRTC(isHost) {
+  pc = new RTCPeerConnection({ iceServers: [{urls: 'stun:stun.l.google.com:19302'}] });
+
+  pc.onicegatheringstatechange = () => {
+    if (pc.iceGatheringState === 'complete' && pc.localDescription) {
+      document.getElementById('multiplayer-status').textContent = 'READY';
+      document.getElementById('btn-generate').style.display = 'block';
+    }
   };
-  let jsonStr = JSON.stringify(state);
-  let b64 = btoa(jsonStr);
-  let clean = b64.replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
-  
-  let sum = clean.split('').reduce((a,c) => a + c.charCodeAt(0), 0) % 36;
-  let chk = sum.toString(36).toUpperCase();
-  
-  return 'K9' + clean + chk;
-}
 
-function copySeed() {
-  navigator.clipboard.writeText(generateWorldSeed()).then(() => battleLog('WORLD SEED COPIED — send to friend'));
-}
-
-function showLoadSeed() { document.getElementById('loadSeedOverlay').style.display = 'block'; }
-function hideLoadSeed() { document.getElementById('loadSeedOverlay').style.display = 'none'; }
-
-function loadSeed() {
-  let raw = document.getElementById('loadSeedInput').value.trim();
-  let input = raw.replace(/\s+/g, '');
-  hideLoadSeed();
-  if (!input || !input.startsWith('K9')) {
-    battleLog('BAD SEED FORMAT');
-    return;
-  }
-  try {
-    let payload = input.slice(2, -1);
-    let givenChk = input.slice(-1);
-    
-    let calc = payload.split('').reduce((a,c) => a + c.charCodeAt(0), 0) % 36;
-    if (calc.toString(36).toUpperCase() !== givenChk) {
-      battleLog('BAD SEED CHECKSUM');
-      return;
-    }
-    
-    let b64 = payload.replace(/-/g,'+').replace(/_/g,'/');
-    while (b64.length % 4) b64 += '=';
-    const state = JSON.parse(atob(b64));
-    
-    // Map based on YOUR role
-    if (myRole === 'host') {
-      myPos = {x: state.hx || 8, y: state.hy || 8};
-      otherPos = {x: state.jx || 8, y: state.jy || 8};
-      myHealth = Math.max(0, state.hh || 10);
-      otherHealth = Math.max(0, state.jh || 10);
-    } else {
-      myPos = {x: state.jx || 8, y: state.jy || 8};
-      otherPos = {x: state.hx || 8, y: state.hy || 8};
-      myHealth = Math.max(0, state.jh || 10);
-      otherHealth = Math.max(0, state.hh || 10);
-    }
-    
-    inventory = (state.inv || '').split('|').filter(Boolean).map(name => ({type:'badge', name}));
-    
-    sendMyState();
-    battleLog('FULL DUEL RESTORED ✓ (both positions + HP + badges)');
-    draw();
-  } catch(e) {
-    console.error(e);
-    battleLog('BAD SEED - CORRUPTED DATA');
-  }
-}
-
-// ====================== sendMyState ======================
-function sendMyState() {
-  if (dc && dc.readyState === 'open') {
-    sendMsg({
-      type: 'myState',
-      name: myName,
-      pos: myPos,
-      health: myHealth
-    });
-  }
-}
-
-// ====================== WEBRTC (unchanged) ======================
-function setupWebRTC() {
-  pc = new RTCPeerConnection({
-    iceServers: [{urls: 'stun:stun.l.google.com:19302'}, {urls: 'stun:stun1.l.google.com:19302'}]
-  });
-
-  pc.onicecandidate = e => { if (!e.candidate) finalizeSDP(); };
-  pc.onicegatheringstatechange = () => { if (pc.iceGatheringState === 'complete') finalizeSDP(); };
-
-  if (myRole === 'host') {
-    dc = pc.createDataChannel('kain9');
+  if (isHost) {
+    dc = pc.createDataChannel('jurablo');
     setupDataChannel(dc);
     pc.createOffer().then(o => pc.setLocalDescription(o));
   } else {
-    pc.ondatachannel = e => { dc = e.channel; setupDataChannel(dc); };
+    pc.ondatachannel = e => {
+      dc = e.channel;
+      setupDataChannel(dc);
+    };
   }
-  setTimeout(finalizeSDP, 1800);
 }
 
-function finalizeSDP() {
-  if (!pc || !pc.localDescription) return;
-  const code = encodeSDP(pc.localDescription);
-  document.getElementById('localSDP').value = code;
-  document.getElementById('status').innerHTML = `✅ @-BLOB ready — send to friend`;
-}
-
-function setupDataChannel(channel) {
-  channel.onopen = () => {
-    document.getElementById('signaling').style.display = 'none';
-    document.getElementById('game').style.display = 'block';
-    document.getElementById('status').innerHTML = `KAIN9 LINKED • ${myRole.toUpperCase()}`;
-    lockdown();
-
-    sendMsg({type: 'name', name: myName});
-    sendMyState();
+function setupDataChannel(ch) {
+  ch.onopen = () => {
+    document.getElementById('multiplayer-overlay').style.display = 'none';
   };
-
-  channel.onmessage = e => {
-    const msg = JSON.parse(e.data);
-
-    if (msg.type === 'name') otherName = msg.name;
-    if (msg.type === 'myState') {
-      otherName = msg.name || otherName;
-      otherPos = msg.pos || otherPos;
-      otherHealth = msg.health || otherHealth;
-      draw();
-    }
-    if (msg.type === 'move') otherPos = msg;
-    if (msg.type === 'slash') {
-      myHealth = Math.max(0, myHealth - 2);
-      battleLog('YOU WERE SLASHED!');
-      if (myHealth <= 0) battleLog('YOU WERE DEFEATED!');
-      sendMsg({type: 'healthUpdate', health: myHealth});
-    }
-    if (msg.type === 'healthUpdate') otherHealth = msg.health;
-
-    draw();
+  ch.onmessage = e => {
+    try {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'move') console.log(`Remote move: ${msg.dir}`);
+    } catch {}
   };
 }
 
-function sendMsg(obj) {
-  if (dc && dc.readyState === 'open') dc.send(JSON.stringify(obj));
+// ==================== PNG tEXt METADATA (byte-level, from your inspirational script) ====================
+const crcTable = new Uint32Array(256);
+for (let i = 0; i < 256; i++) {
+  let c = i;
+  for (let j = 0; j < 8; j++) c = (c & 1) ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+  crcTable[i] = c;
 }
 
-// ====================== NAME & ROLE ======================
-function setNameAndContinue() {
-  myName = document.getElementById('playerName').value.trim() || 'Kain';
-  document.getElementById('nameScreen').style.display = 'none';
-  document.getElementById('start').style.display = 'block';
-}
-
-async function startRole(role) {
-  myRole = role;
-  myLetter = role === 'host' ? 'H' : 'J';
-  myColor = role === 'host' ? '#ff8c00' : '#0f0';
-  otherLetter = role === 'host' ? 'J' : 'H';
-  otherColor = role === 'host' ? '#0f0' : '#ff8c00';
-
-  myHealth = 10; otherHealth = 10; inventory = []; otherPos = null;
-
-  document.getElementById('start').style.display = 'none';
-  document.getElementById('signaling').style.display = 'block';
-  document.getElementById('status').innerHTML = 'Kain9 • Generating SDP...';
-
-  if (role === 'host') {
-    document.getElementById('codeTitle').textContent = 'YOUR OFFER CODE';
-    document.getElementById('codeSection').classList.add('orange-box');
-    document.getElementById('codeSection').style.display = 'block';
-    document.getElementById('pasteTitle').textContent = "PASTE JOINER'S ANSWER";
-    document.getElementById('pasteSection').classList.add('orange-box');
-    document.getElementById('pasteSection').style.display = 'block';
-  } else {
-    document.getElementById('pasteTitle').textContent = "PASTE HOST'S CODE";
-    document.getElementById('pasteSection').classList.add('green-box');
-    document.getElementById('pasteSection').style.display = 'block';
+function addTextChunk(pngBytes, keyword, text) {
+  const kwBytes = new TextEncoder().encode(keyword);
+  const txtBytes = new TextEncoder().encode(text);
+  const data = new Uint8Array(kwBytes.length + 1 + txtBytes.length);
+  data.set(kwBytes);
+  data[kwBytes.length] = 0; // null separator
+  data.set(txtBytes, kwBytes.length + 1);
+  const length = data.length;
+  const chunk = new Uint8Array(12 + length);
+  const dv = new DataView(chunk.buffer);
+  dv.setUint32(0, length); // length
+  chunk.set([116, 69, 88, 116], 4); // "tEXt"
+  chunk.set(data, 8); // data
+  // CRC over type+data
+  let crc = 0xffffffff;
+  for (let i = 4; i < 8 + length; i++) {
+    crc = crcTable[(crc ^ chunk[i]) & 0xff] ^ (crc >>> 8);
   }
-
-  setupWebRTC();
-  requestAnimationFrame(gameLoop);
-}
-
-// ====================== GAME ======================
-function gameLoop(now) {
-  if (!lastFrame) lastFrame = now;
-  if (now - lastFrame >= FRAME_TIME) {
-    tick++;
-    draw();
-    lastFrame = now;
+  dv.setUint32(8 + length, crc ^ 0xffffffff);
+  /* ---- locate IEND ---- */
+  let pos = 8; // skip PNG signature
+  while (pos < pngBytes.length) {
+    const len = (pngBytes[pos] << 24) | (pngBytes[pos+1] << 16) |
+                (pngBytes[pos+2] << 8) | pngBytes[pos+3];
+    const type = String.fromCharCode(
+      pngBytes[pos+4], pngBytes[pos+5], pngBytes[pos+6], pngBytes[pos+7]);
+    if (type === 'IEND') break;
+    pos += 12 + len;
   }
-  requestAnimationFrame(gameLoop);
+  // Insert before IEND
+  const newPng = new Uint8Array(pngBytes.length + chunk.length);
+  newPng.set(pngBytes.subarray(0, pos));
+  newPng.set(chunk, pos);
+  newPng.set(pngBytes.subarray(pos), pos + chunk.length);
+  return newPng;
 }
 
-function copySDP() {
-  const txt = document.getElementById('localSDP').value.trim();
-  if (!txt) return battleLog('CODE STILL GENERATING');
-  navigator.clipboard.writeText(txt).then(() => battleLog('@-BLOB COPIED'));
+function readTextChunk(pngBytes, wantedKey) {
+  let i = 8; // after signature
+  while (i < pngBytes.length - 8) {
+    const len = (pngBytes[i] << 24) | (pngBytes[i+1] << 16) |
+                (pngBytes[i+2] << 8) | pngBytes[i+3];
+    const type = String.fromCharCode(
+      pngBytes[i+4], pngBytes[i+5], pngBytes[i+6], pngBytes[i+7]);
+    if (type === 'tEXt') {
+      const start = i + 8;
+      const nullPos = pngBytes.indexOf(0, start);
+      const key = new TextDecoder().decode(pngBytes.subarray(start, nullPos));
+      if (key === wantedKey) {
+        const value = new TextDecoder().decode(
+          pngBytes.subarray(nullPos + 1, start + len));
+        return value;
+      }
+    }
+    i += 12 + len;
+  }
+  return null;
 }
 
-async function connect() {
-  let raw = document.getElementById('remoteSDP').value;
-  if (!raw.trim()) return battleLog('PASTE CODE FIRST');
-  try {
-    const desc = decodeSDP(raw);
-    const remoteType = myRole === 'host' ? 'answer' : 'offer';
-    await pc.setRemoteDescription({type: remoteType, sdp: desc.sdp});
+// ==================== GENERATE / IMPORT ====================
+async function generateInvite() {
+  if (!pc?.localDescription) return;
 
-    if (myRole === 'joiner') {
-      battleLog('HOST CODE OK — GENERATING ANSWER');
-      const answer = await pc.createAnswer();
-      await pc.setLocalDescription(answer);
-      document.getElementById('pasteSection').style.display = 'none';
-      document.getElementById('codeTitle').textContent = 'YOUR ANSWER CODE';
-      document.getElementById('codeSection').style.display = 'block';
-      finalizeSDP();
-      battleLog('ANSWER READY — SEND TO HOST');
+  const json = JSON.stringify(pc.localDescription);
+  const b64 = btoa(json);
+  const code = b64.replace(/=/g,'').replace(/\+/g,'-').replace(/\//g,'_');
+
+  const baseImg = myRole === 'host' ? 'player.png' : 'druid_diamond_armor-front1.png';
+
+  const resp = await fetch(baseImg);
+  const arrayBuf = await resp.arrayBuffer();
+  const withMeta = addTextChunk(new Uint8Array(arrayBuf), 'SDP', code);
+  const blob = new Blob([withMeta], {type:'image/png'});
+  const url = URL.createObjectURL(blob);
+
+  const link = document.createElement('a');
+  link.download = (myRole === 'host' ? 'host-' : 'join-') + Math.floor(Date.now()/1000) + '.png';
+  link.href = url;
+  link.click();
+
+  document.getElementById('code-preview').src = url;
+  document.getElementById('code-preview').style.display = 'block';
+  document.getElementById('btn-back-from-code').style.display = 'block';
+  document.getElementById('btn-generate').style.display = 'none';
+}
+
+function importAnswer() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = 'image/png';
+  input.onchange = async e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const buf = await file.arrayBuffer();
+    const code = readTextChunk(new Uint8Array(buf), 'SDP');
+    if (code) {
+      connectFromCode(code);
     } else {
-      battleLog('CONNECTED!');
+      document.getElementById('multiplayer-status').textContent = 'NO CODE FOUND';
     }
+  };
+  input.click();
+}
+
+function connectFromCode(code) {
+  let b64 = code.replace(/-/g,'+').replace(/_/g,'/');
+  while (b64.length % 4) b64 += '=';
+  try {
+    const desc = JSON.parse(atob(b64));
+    pc.setRemoteDescription(desc).then(() => {
+      if (myRole === 'joiner') {
+        pc.createAnswer().then(a => pc.setLocalDescription(a));
+        document.getElementById('btn-generate').style.display = 'block';
+      } else {
+        document.getElementById('multiplayer-overlay').style.display = 'none';
+      }
+    });
   } catch (e) {
-    battleLog('BAD CODE');
+    document.getElementById('multiplayer-status').textContent = 'INVALID CODE';
   }
 }
 
-function move(dx, dy) {
-  myPos.x = Math.max(0, Math.min(SIZE-1, myPos.x + dx));
-  myPos.y = Math.max(0, Math.min(SIZE-1, myPos.y + dy));
-  sendMsg({type: 'move', x: myPos.x, y: myPos.y});
-  sendMyState();
-  draw();
+function backFromCode() {
+  document.getElementById('code-preview').style.display = 'none';
+  document.getElementById('btn-back-from-code').style.display = 'none';
+  document.getElementById('btn-generate').style.display = 'block';
+  if (myRole === 'host') document.getElementById('btn-import').style.display = 'block';
 }
 
-function slash() {
-  if (!otherPos || Math.abs(myPos.x - otherPos.x) > 1 || Math.abs(myPos.y - otherPos.y) > 1) return;
-  sendMsg({type: 'slash'});
-  otherHealth = Math.max(0, otherHealth - 2);
-  battleLog('SLASH HIT!');
-  if (otherHealth <= 0) {
-    battleLog(`DEFEATED ${otherName}!`);
-    inventory.push({type: 'badge', name: otherName});
-    battleLog(`BADGE ACQUIRED: ${otherName}`);
-  }
-  sendMsg({type: 'healthUpdate', health: otherHealth});
-  sendMyState();
-  draw();
-}
-
-function draw() {
-  ctx.fillStyle = '#001100';
-  ctx.fillRect(0, 0, 480, 480);
-  ctx.strokeStyle = '#003300';
-  for (let i = 0; i <= SIZE; i++) {
-    ctx.beginPath();
-    ctx.moveTo(i*30, 0); ctx.lineTo(i*30, 480);
-    ctx.moveTo(0, i*30); ctx.lineTo(480, i*30);
-    ctx.stroke();
-  }
-  ctx.fillStyle = myColor;
-  ctx.font = 'bold 32px monospace';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(myLetter, myPos.x*30 + 15, myPos.y*30 + 15);
-  if (otherPos) {
-    ctx.fillStyle = otherColor;
-    ctx.fillText(otherLetter, otherPos.x*30 + 15, otherPos.y*30 + 15);
-  }
-
-  document.getElementById('myInfo').textContent = `${myName} (HP ${myHealth}/10)`;
-  document.getElementById('otherInfo').textContent = `${otherName} (HP ${otherHealth}/10)`;
-  document.getElementById('seedValue').textContent = generateWorldSeed();
-
-  const badges = inventory.filter(i => i.type === 'badge').map(i => i.name).join(', ') || 'none';
-  document.getElementById('inventoryDisplay').innerHTML = `BADGES: ${badges}`;
-  
-  document.getElementById('status').innerHTML = 
-    `TICK ${tick} | ME:(${myPos.x},${myPos.y}) | OTHER: ${otherPos ? `(${otherPos.x},${otherPos.y})` : '??'}`;
-}
-
-// Keyboard
-document.addEventListener('keydown', e => {
-  if (!myRole) return;
-  if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') move(-1,0);
-  if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') move(1,0);
-  if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') move(0,-1);
-  if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') move(0,1);
-  if (e.key === ' ' || e.key === 'Enter') slash();
+// Touch press effect
+document.querySelectorAll('#dpad button').forEach(btn => {
+  btn.addEventListener('touchstart', () => btn.classList.add('pressed'), {passive: false});
+  btn.addEventListener('touchend', () => btn.classList.remove('pressed'));
 });
-
-window.onload = () => {
-  const seedField = document.getElementById('loadSeedInput');
-  seedField.addEventListener('paste', () => setTimeout(() => {
-    seedField.value = seedField.value.trim().replace(/\s+/g, '');
-  }, 10));
-};
 </script>
 </body>
 </html>
