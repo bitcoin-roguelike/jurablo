@@ -1,5 +1,5 @@
-# Kain9 Game Engine
+# JURABLO
 <br/>
-This is a work-in-progress repository for the Kain9 game engine.
+This is a work-in-progress repository.
 <br/>
 Features and capabilities will evolve over time.
